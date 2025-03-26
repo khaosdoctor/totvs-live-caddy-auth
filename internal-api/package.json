@@ -1,22 +1,23 @@
 {
-  "name": "internal-api",
-  "version": "0.0.1",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "Lucas Santos <hello@lsantos.dev> (https://lsantos.dev/)",
-  "license": "GPL-3.0",
-  "description": "",
-  "devDependencies": {
-    "@types/express": "^5.0.1",
-    "@types/node": "^22.13.13",
-    "@types/node-jose": "^1.1.13",
-    "typescript": "^5.8.2"
-  },
-  "dependencies": {
-    "express": "^4.21.2",
-    "node-jose": "^2.2.0"
-  }
+    "name": "internal-api",
+    "version": "0.0.1",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "start": "node --experimental-transform-types src/index.ts"
+    },
+    "keywords": [],
+    "author": "Lucas Santos <hello@lsantos.dev> (https://lsantos.dev/)",
+    "license": "GPL-3.0",
+    "description": "",
+    "devDependencies": {
+        "@types/express": "^5.0.1",
+        "@types/node": "^22.13.13",
+        "@types/node-jose": "^1.1.13",
+        "typescript": "^5.8.2"
+    },
+    "dependencies": {
+        "express": "^4.21.2",
+        "node-jose": "^2.2.0"
+    }
 }

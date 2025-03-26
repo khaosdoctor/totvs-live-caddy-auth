@@ -2,8 +2,9 @@
     "name": "auth-service",
     "version": "0.0.1",
     "main": "index.js",
+    "type": "module",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "start": "node --experimental-transform-types src/index.ts"
     },
     "keywords": [],
     "author": "Lucas Santos <hello@lsantos.dev> (https://lsantos.dev/)",
@@ -15,6 +16,7 @@
         "typescript": "^5.8.2"
     },
     "dependencies": {
+        "@hono/node-server": "^1.14.0",
         "hono": "^4.7.5",
         "node-jose": "^2.2.0"
     }
