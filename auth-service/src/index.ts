@@ -1,6 +1,7 @@
 import { hash } from 'node:crypto'
 import { Hono } from 'hono'
-import { setUpJWKSKeyStore, signJWT } from './jwt'
+import { serve } from '@hono/node-server'
+import { setUpJWKSKeyStore, signJWT } from './jwt.ts'
 const app = new Hono()
 
 const users = new Map([['123456', { name: 'Lucas' }], ['999999', { name: 'Bill' }]])
@@ -48,6 +49,7 @@ app.get('/.well-known/jwks.json', (c) =>
 app.get('/gateway/auth', async (c) => {
     try {
         const authorizationHeader = c.req.header('Authorization')
+        console.log({ authorizationHeader })
         if (!authorizationHeader) {
             c.status(401)
             return c.json({
@@ -56,6 +58,7 @@ app.get('/gateway/auth', async (c) => {
         }
 
         const [protocol, plainKey] = authorizationHeader.split(' ') as [string, string]
+        console.log({ protocol, plainKey })
         if (!protocol || protocol.toLowerCase() !== 'key') {
             c.status(403)
             return c.json({
@@ -65,9 +68,11 @@ app.get('/gateway/auth', async (c) => {
 
         const keyHash = hash('sha256', plainKey)
         let cachedJwt = cache.get(keyHash)
+        console.log({ cachedJwt })
 
         if (!cachedJwt) {
             const keyData = users.get(plainKey)
+            console.log({ keyData })
             if (!keyData) {
                 c.status(401)
                 return c.json({
@@ -91,3 +96,6 @@ app.get('/gateway/auth', async (c) => {
         })
     }
 })
+
+serve({ fetch: app.fetch, port: 4052 }, (i) => console.log(`Listening ${i.port}`))
+
