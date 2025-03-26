@@ -1,0 +1,16 @@
+services:
+  caddy:
+    build:
+      context: ./caddy
+      dockerfile: ./Dockerfile
+    ports:
+      - "8080:80"
+      - "8443:443"
+  api: # Esse nome é o mesmo que vamos acessar o serviço via DNS
+    build:
+      context: ./internal-api
+      dockerfile: ./Dockerfile
+  auth:
+    build:
+      context: ./auth-service
+      dockerfile: ./Dockerfile

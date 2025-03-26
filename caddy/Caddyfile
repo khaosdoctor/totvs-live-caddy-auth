@@ -1,0 +1,129 @@
+{
+	# Email do responsável
+	email hello@lsantos.dev
+	# Desativa HTTPS
+	auto_https off
+	# Configura o rate limiting para rodar antes da auth
+	order rate_limit before basic_auth
+	# configura o logging
+	log default {
+		output stdout
+		format console
+		level INFO
+	}
+}
+
+# Mixin para remover todos esses headers das requests
+(removeUselessHeaders) {
+	header /* {
+		-X-Powered-By
+		-Server
+		-X-Request-Id
+	}
+}
+
+# Adiciona um header de deep trace
+(addUniqueRequestId) {
+	header * X-Request-ID "{http.request.uuid}"
+}
+
+# Rate limiting: https://github.com/mholt/caddy-ratelimit
+(rateLimitAllClients) {
+	# Rate limiting para todo mundo
+	# com o mesmo limite
+	rate_limit {
+		zone static_limiting {
+			key static
+			events 300 # 300 requests
+			window 1m # por minuto
+		}
+        log_key
+	}
+}
+
+(rateLimitPerClient) {
+	# Rate limiting por request e rota  
+	# diferentes rotas podem ter diferentes limites por IP
+	# e.g: ip1/r1 -> pode atingir o limite e ter a resposta 429 em /r1
+	# mas ip1/r2 vai continuar igual porque é outro recurso
+	rate_limit {
+		zone dynamic_limiting {
+			key "{remote_host}{http.request.orig_uri.path}"
+			events 10
+			window 1m
+		}
+		log_key # Logs the key that hit the limit
+	}
+}
+
+# Mixin para adicionar CORS
+(cors) {
+	@options method OPTIONS
+	header {
+		Access-Control-Allow-Origin *
+		Access-Control-Allow-Credentials true
+		Access-Control-Allow-Methods *
+		Access-Control-Allow-Headers *
+		defer
+	}
+	handle @options {
+		respond 204 {
+			close
+		}
+	}
+}
+
+# Expõe somente a API atrás dessa URL
+http://{$API_PUBLIC_URL} {
+	import removeUselessHeaders
+	import addUniqueRequestId
+    import rateLimitPerClient
+	import cors
+
+	# Bate somente requests com o header Authorization presente
+	@apiKeyAuth header Authorization key*
+
+	# Matcher para rotas que são totalmente publicas
+	# Podemos usar CEL expressions (https://cel.dev/) ou então os default matchers do Caddy
+	# Docs: https://caddyserver.com/docs/caddyfile/matchers#expression
+	@publicRoutes {
+		# Bate qualquer rota que seja /public ou /public/<algo>
+		expression `(path_regexp('^/public$|/public/[^/]+$'))`
+	}
+
+	# Todas as rotas que baterem como publicas
+	# vão pular a autenticação completamente
+	handle @publicRoutes {
+		reverse_proxy {$API_SERVICE_NAME}:{$API_SERVICE_PORT}
+	}
+
+	# Todas as outras requests que tiverem um header Authorization que comece com key
+	handle @apiKeyAuth {
+		# Docs:https://caddyserver.com/docs/caddyfile/directives/forward_auth
+		# Chama o serviço de auth
+		forward_auth {$AUTH_SERVICE_NAME}:{$AUTH_SERVICE_PORT} {
+			# On GET /gateway/auth
+			uri /gateway/auth
+			# Copy all these headers to the next request
+			copy_headers on-behalf-of
+			fail_duration 30s
+			max_fails 3
+			unhealthy_status 5xx
+			unhealthy_latency 5s
+		}
+		# Se tiver sucesso redireciona para a API
+		reverse_proxy {$API_SERVICE_NAME}:{$API_SERVICE_PORT} {
+			# Remove o header original de autenticação com a chave
+			header_up -Authorization
+			# Adiciona um novo header
+			header_up X-Auth-Type key
+		}
+	}
+
+	# Para qualquer outra request responde com 401
+	handle {
+		respond "Missing Authorization key" 401 {
+			close
+		}
+	}
+}
