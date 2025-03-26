@@ -1,8 +1,8 @@
-import Express, { Response } from 'express'
-import { AuthenticatedUsedData, withAuth } from './middlewares/authMiddleware'
+import Express, { type Response } from 'express'
+import { type AuthenticatedUsedData, withAuth } from './middlewares/authMiddleware.ts'
 
 const env = {
-    AUTH_SERVICE_URL: process.env.AUTH_SERVICE_URL as string
+    AUTH_SERVICE_URL: process.env.AUTH_SERVICE_URL ?? 'http://localhost:4052'
 }
 if (!env.AUTH_SERVICE_URL) throw new Error('Missing AUTH_SERVICE_URL')
 
