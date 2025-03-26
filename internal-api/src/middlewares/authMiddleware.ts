@@ -45,6 +45,7 @@ async function verifyJWT(jwt: string) {
 async function decodeToken(token: string, env: AuthMiddlewareOptions['env']) {
 
     if (!cachedKeys) {
+        console.log('Cache miss for keys, fetching')
         const JWKSResponse = await fetch(`${env.AUTH_SERVICE_URL}/.well-known/jwks.json`)
         if (!JWKSResponse.ok) throw new Error('Could not fetch auth validation key')
 
